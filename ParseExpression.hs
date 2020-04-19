@@ -7,8 +7,15 @@ data Expr
   | EBool Bool
   deriving Show
 
+parseExprs :: Parser [Expr]
+parseExprs = do e <- parseExpression
+                do symbol ","
+                   es <- parseExprs
+                   return (e:es)
+                  <|> return [e]
+
 parseExpression :: Parser Expr
-parseExpression = parseIntExpr <|> parseBoolExpr
+parseExpression = parseBoolExpr <|> parseIntExpr
 
 parseIntExpr :: Parser Expr
 parseIntExpr = do n <- parseInt1
@@ -52,8 +59,11 @@ parseInt4 = do symbol "("
               <|> nat
 
 parseBoolExpr :: Parser Expr
-parseBoolExpr = do b <- parseBool1
+parseBoolExpr = do b <- parseBool0
                    return (EBool b)
+
+parseBool0 :: Parser Bool
+parseBool0 = parseComparison parseInt1 <|> parseComparison parseBool1 <|> parseBool1
 
 parseBool1 :: Parser Bool
 parseBool1 = do b1 <- parseBool2
@@ -81,15 +91,6 @@ parseBool4 = parseTrue <|> parseFalse <|>
                 do b <- parseBool1
                    symbol ")"
                    return b
-                  <|> do b <- parseEquality parseInt1
-                         symbol ")"
-                         return b
-                        <|> do b <- parseEquality parseBool1
-                               symbol ")"
-                               return b
-                              <|> do b <- parseComparison parseInt1
-                                     symbol ")"
-                                     return b
 
 parseTrue :: Parser Bool
 parseTrue = do symbol "True"
@@ -99,26 +100,17 @@ parseFalse :: Parser Bool
 parseFalse = do symbol "False"
                 return False
 
-parseEqualitySymbol :: Parser String
-parseEqualitySymbol = symbol "==" <|> symbol "!="
-
-parseEquality :: Eq a => Parser a -> Parser Bool
-parseEquality parser = do e1 <- parser
-                          s <- parseEqualitySymbol
-                          e2 <- parser
-                          return (case s of
-                                  "==" -> e1 == e2
-                                  "!=" -> e1 /= e2)
-
 parseComparisonSymbol :: Parser String
-parseComparisonSymbol = symbol "<" <|> symbol "<=" <|> symbol ">" <|> symbol ">="
+parseComparisonSymbol = symbol "==" <|> symbol "!=" <|> symbol "<=" <|> symbol "<" <|> symbol ">=" <|> symbol ">"
 
 parseComparison :: Ord a => Parser a -> Parser Bool
 parseComparison parser = do e1 <- parser
                             s <- parseComparisonSymbol
                             e2 <- parser
                             return (case s of
-                                    "<" -> e1 < e2
+                                    "==" -> e1 == e2
+                                    "!=" -> e1 /= e2
                                     "<=" -> e1 <= e2
-                                    ">" -> e1 > e2
-                                    ">=" -> e1 >= e2)
+                                    "<" -> e1 < e2
+                                    ">=" -> e1 >= e2
+                                    ">" -> e1 > e2)

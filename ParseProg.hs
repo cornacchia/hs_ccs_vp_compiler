@@ -3,13 +3,6 @@ import Control.Applicative
 import Parse
 import ParseExpression
 
-parseExprs :: Parser [Expr]
-parseExprs = do e <- parseExpression
-                do symbol ","
-                   es <- parseExprs
-                   return (e:es)
-                  <|> return [e]
-
 type Constant = String
 type Channel = String
 type Var = String

@@ -1,57 +1,49 @@
-module ParseProg where
+module ParseVPCCS where
 import Control.Applicative
 import Parse
 import ParseExpression
 
-type Constant = String
-type Channel = String
-type Var = String
-type Relabeling = [(Channel, Channel)]
+type VP_Constant = String
+type VP_Channel = String
+type VP_Var = String
+type VP_Relabeling = [(VP_Channel, VP_Channel)]
 
-data Process
-  = PInaction
-  | PConst Constant [Expr] Process
-  | PInputPrefix Channel Var Process
-  | POutputPrefix Channel Var Process
-  | PTauPrefix Process
-  | PIfThen Expr Process
-  | PParallel Process Process
-  | PSum Process Process
-  | PRestriction Process [Channel]
-  | PRelabeling Process Relabeling
+data VP_Process
+  = VP_Inaction
+  | VP_Const VP_Constant [Expr] VP_Process
+  | VP_InputPrefix VP_Channel VP_Var VP_Process
+  | VP_OutputPrefix VP_Channel VP_Var VP_Process
+  | VP_TauPrefix VP_Process
+  | VP_IfThen Expr VP_Process
+  | VP_Parallel VP_Process VP_Process
+  | VP_Sum VP_Process VP_Process
+  | VP_Restriction VP_Process [VP_Channel]
+  | VP_Relabel VP_Process VP_Relabeling
   deriving Show
 
-type Program = [Process]
+type VP_Program = [VP_Process]
 
-parseInaction :: Parser Process
+parseInaction :: Parser VP_Process
 parseInaction = do symbol "0"
-                   return PInaction
+                   return VP_Inaction
 
-parseExprParens :: Parser [Expr]
-parseExprParens = do symbol "("
-                     do exprs <- parseExprs
-                        symbol ")"
-                        return exprs
-                       <|> do symbol ")"
-                              return []
-
-parseConstant :: Parser Process
+parseConstant :: Parser VP_Process
 parseConstant = do name <- token (many letter)
                    exprs <- parseExprParens
                    symbol "="
                    proc <- parseProcess
-                   return (PConst name exprs proc)
+                   return (VP_Const name exprs proc)
 
-parseInputPrefix :: Parser Process
+parseInputPrefix :: Parser VP_Process
 parseInputPrefix = do chan <- token (many letter)
                       symbol "("
                       var <- token (many letter)
                       symbol ")"
                       symbol "."
                       proc <- parseProcess
-                      return (PInputPrefix chan var proc)
+                      return (VP_InputPrefix chan var proc)
 
-parseOutputPrefix :: Parser Process
+parseOutputPrefix :: Parser VP_Process
 parseOutputPrefix = do symbol "'"
                        chan <- token (many letter)
                        symbol "("
@@ -59,32 +51,32 @@ parseOutputPrefix = do symbol "'"
                        symbol ")"
                        symbol "."
                        proc <- parseProcess
-                       return (POutputPrefix chan var proc)
+                       return (VP_OutputPrefix chan var proc)
 
-parseTauPrefix :: Parser Process
+parseTauPrefix :: Parser VP_Process
 parseTauPrefix = do symbol "tau"
                     symbol "."
                     proc <- parseProcess
-                    return (PTauPrefix proc)
+                    return (VP_TauPrefix proc)
 
-parseIfThen :: Parser Process
+parseIfThen :: Parser VP_Process
 parseIfThen = do symbol "if"
                  b <- parseBoolExpr
                  symbol "then"
                  proc <- parseProcess
-                 return (PIfThen b proc)
+                 return (VP_IfThen b proc)
 
-parseParallel :: Parser Process
+parseParallel :: Parser VP_Process
 parseParallel = do p1 <- parseProcess
                    symbol "|"
                    p2 <- parseProcess
-                   return (PParallel p1 p2)
+                   return (VP_Parallel p1 p2)
 
-parseSum :: Parser Process
+parseSum :: Parser VP_Process
 parseSum = do p <- parseProcess
               do symbol "+"
                  ps <- parseSum
-                 return (PSum p ps)
+                 return (VP_Sum p ps)
 
 parseNames :: Parser [String]
 parseNames = do n <- token (many letter)
@@ -103,76 +95,76 @@ parseSingleName :: Parser [String]
 parseSingleName = do chn <- many (token letter)
                      return [chn]
 
-parseRestrictionSet :: Parser [Channel]
+parseRestrictionSet :: Parser [VP_Channel]
 parseRestrictionSet = parseSetOfNames <|> parseSingleName
 
-parseRestriction :: Parser Process
+parseRestriction :: Parser VP_Process
 parseRestriction = do p <- parseProcess
                       symbol "\\"
                       rest <- parseRestrictionSet
-                      return (PRestriction p rest)
+                      return (VP_Restriction p rest)
 
-parseSingleRelabeling :: Parser (Channel, Channel)
+parseSingleRelabeling :: Parser (VP_Channel, VP_Channel)
 parseSingleRelabeling = do ch1 <- token (many letter)
                            symbol "/"
                            ch2 <- token (many letter)
                            return (ch1, ch2)
 
-parseRelabelingFunction :: Parser Relabeling
+parseRelabelingFunction :: Parser VP_Relabeling
 parseRelabelingFunction = do r <- parseSingleRelabeling
                              do symbol ","
                                 rs <- parseRelabelingFunction
                                 return (r:rs)
                                <|> return [r]
 
-parseRelabeling :: Parser Process
+parseRelabeling :: Parser VP_Process
 parseRelabeling = do p <- parseProcess
                      symbol "["
                      relabeling <- parseRelabelingFunction
                      symbol "]"
-                     return (PRelabeling p relabeling)
+                     return (VP_Relabel p relabeling)
 
-parseParensProcess :: Parser Process
+parseParensProcess :: Parser VP_Process
 parseParensProcess = do symbol "("
                         p <- parseProcess
                         symbol ")"
                         return p
 
-parseProcess4 :: Parser Process
+parseProcess4 :: Parser VP_Process
 parseProcess4 = parseInaction <|> parseInputPrefix <|> parseOutputPrefix <|>
                 parseTauPrefix <|> parseIfThen <|> parseParensProcess
 
-parseProcess3 :: Parser Process
+parseProcess3 :: Parser VP_Process
 parseProcess3 = do p1 <- parseProcess4
                    do symbol "\\"
                       rest <- parseRestrictionSet
-                      return (PRestriction p1 rest)
+                      return (VP_Restriction p1 rest)
                      <|> do symbol "["
                             relabeling <- parseRelabelingFunction
                             symbol "]"
-                            return (PRelabeling p1 relabeling)
+                            return (VP_Relabel p1 relabeling)
                         <|> return p1
 
-parseProcess2 :: Parser Process
+parseProcess2 :: Parser VP_Process
 parseProcess2 = do p1 <- parseProcess3
                    do symbol "|"
                       p2 <- parseProcess2
-                      return (PParallel p1 p2)
+                      return (VP_Parallel p1 p2)
                      <|> return p1
 
-parseProcess1 :: Parser Process
+parseProcess1 :: Parser VP_Process
 parseProcess1 = do p1 <- parseProcess2
                    do symbol "+"
                       p2 <- parseProcess1
-                      return (PSum p1 p2)
+                      return (VP_Sum p1 p2)
                      <|> return p1
 
-parseProcess :: Parser Process
+parseProcess :: Parser VP_Process
 parseProcess = parseConstant <|> parseProcess1
 
--- ### The program consists of a series of processes
--- program -> process1 process2 process3 ...
-parseProg :: Parser Program
+-- ### The VP_Program consists of a series of VP_Processes
+-- VP_Program -> VP_Process1 VP_Process2 VP_Process3 ...
+parseProg :: Parser VP_Program
 parseProg = do p <- parseProcess
                do ps <- parseProg
                   return (p:ps)

@@ -7,6 +7,14 @@ data Expr
   | EBool Bool
   deriving Show
 
+parseExprParens :: Parser [Expr]
+parseExprParens = do symbol "("
+                     do exprs <- parseExprs
+                        symbol ")"
+                        return exprs
+                       <|> do symbol ")"
+                              return []
+
 parseExprs :: Parser [Expr]
 parseExprs = do e <- parseExpression
                 do symbol ","

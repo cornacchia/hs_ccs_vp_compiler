@@ -12,7 +12,7 @@ data VP_Process
   = VP_Inaction
   | VP_Const VP_Constant [Expr] VP_Process
   | VP_InputPrefix VP_Channel VP_Var VP_Process
-  | VP_OutputPrefix VP_Channel VP_Var VP_Process
+  | VP_OutputPrefix VP_Channel Expr VP_Process
   | VP_TauPrefix VP_Process
   | VP_IfThen Expr VP_Process
   | VP_Parallel VP_Process VP_Process
@@ -47,11 +47,11 @@ parseOutputPrefix :: Parser VP_Process
 parseOutputPrefix = do symbol "'"
                        chan <- token (many letter)
                        symbol "("
-                       var <- token (many letter)
+                       expr <- parseExpression
                        symbol ")"
                        symbol "."
                        proc <- parseProcess
-                       return (VP_OutputPrefix chan var proc)
+                       return (VP_OutputPrefix chan expr proc)
 
 parseTauPrefix :: Parser VP_Process
 parseTauPrefix = do symbol "tau"

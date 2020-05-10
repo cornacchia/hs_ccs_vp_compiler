@@ -53,6 +53,15 @@ digit = sat isDigit
 letter :: Parser Char
 letter = sat isAlpha
 
+alphanum :: Parser Char
+alphanum = sat isAlphaNum
+
+variable :: Parser String
+variable = do c <- letter
+              do cs <- some alphanum
+                 return (c:cs)
+                <|> return (c:[])
+
 char :: Char -> Parser Char
 char c = sat (== c)
 

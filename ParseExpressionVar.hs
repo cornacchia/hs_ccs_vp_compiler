@@ -23,10 +23,6 @@ data BooleanExpression
   | ENot BooleanExpression
   | EBEq BooleanExpression BooleanExpression
   | EBNeq BooleanExpression BooleanExpression
-  | EBGt BooleanExpression BooleanExpression
-  | EBGet BooleanExpression BooleanExpression
-  | EBLt BooleanExpression BooleanExpression
-  | EBLet BooleanExpression BooleanExpression
   | EIEq IntegerExpression IntegerExpression
   | EINeq IntegerExpression IntegerExpression
   | EIGt IntegerExpression IntegerExpression
@@ -146,7 +142,7 @@ parseFalse = do symbol "False"
 
 parseBoolExprParens :: Parser BooleanExpression
 parseBoolExprParens = do symbol "("
-                         e <- parseBool1
+                         e <- parseBool0
                          symbol ")"
                          return e
 
@@ -157,9 +153,12 @@ parseBoolExprVar = do v <- token (some alphanum)
 parseComparisonSymbol :: Parser String
 parseComparisonSymbol = symbol "==" <|> symbol "!=" <|> symbol "<=" <|> symbol "<" <|> symbol ">=" <|> symbol ">"
 
+parseIntComparisonSymbol :: Parser String
+parseIntComparisonSymbol = parseComparisonSymbol <|> symbol "<=" <|> symbol "<" <|> symbol ">=" <|> symbol ">"
+
 parseIntComparison :: Parser BooleanExpression
 parseIntComparison = do e1 <- parseInt1
-                        s <- parseComparisonSymbol
+                        s <- parseIntComparisonSymbol
                         e2 <- parseInt1
                         return (case s of
                                 "==" -> (EIEq e1 e2)
@@ -175,8 +174,4 @@ parseBoolComparison = do e1 <- parseBool1
                          e2 <- parseBool1
                          return (case s of
                                  "==" -> (EBEq e1 e2)
-                                 "!=" -> (EBNeq e1 e2)
-                                 "<=" -> (EBLet e1 e2)
-                                 "<" -> (EBLt e1 e2)
-                                 ">=" -> (EBGet e1 e2)
-                                 ">" -> (EBGt e1 e2))
+                                 "!=" -> (EBNeq e1 e2))

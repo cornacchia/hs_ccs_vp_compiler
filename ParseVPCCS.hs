@@ -3,15 +3,16 @@ import Control.Applicative
 import Parse
 import ParseExpressionVar
 
-type VP_Constant = (String, [Expr])
+type VP_Def = (String, [String])
+type VP_Const = (String, [Expr])
 type VP_Channel = String
 type VP_Var = String
 type VP_Relabeling = [(VP_Channel, VP_Channel)]
 
 data VP_Process
   = VP_Inaction
-  | VP_Definition VP_Process VP_Process
-  | VP_Const VP_Constant
+  | VP_Definition VP_Def VP_Process
+  | VP_Constant VP_Const
   | VP_InputPrefix VP_Channel VP_Var VP_Process
   | VP_OutputPrefix VP_Channel Expr VP_Process
   | VP_TauPrefix VP_Process
@@ -28,20 +29,41 @@ parseInaction :: Parser VP_Process
 parseInaction = do symbol "0"
                    return VP_Inaction
 
+parseVars :: Parser [String]
+parseVars = do v <- parseName
+               do symbol ","
+                  vs <- parseVars
+                  return (v:vs)
+                 <|> return [v]
+
+parseVarParens :: Parser [String]
+parseVarParens = do symbol "("
+                    do exprs <- parseVars
+                       symbol ")"
+                       return exprs
+                      <|> do symbol ")"
+                             return []
+                   <|> return []
+
 parseDefinition :: Parser VP_Process
-parseDefinition = do const <- parseConstant
+parseDefinition = do const <- parseName
+                     vars <- parseVarParens
                      symbol "="
                      proc <- parseProcess
-                     return (VP_Definition const proc)
+                     return (VP_Definition (const, vars) proc)
+
+reservedKeywords :: [String]
+reservedKeywords = ["if", "then"]
 
 parseName :: Parser String
-parseName = token variable
+parseName = do v <- token variable
+               if elem v reservedKeywords then empty else return v
 
 parseConstant :: Parser VP_Process
 parseConstant = do name <- parseName
                    do exprs <- parseExprParens
-                      return (VP_Const (name, exprs))
-                     <|> do return (VP_Const (name, []))
+                      return (VP_Constant (name, exprs))
+                     <|> do return (VP_Constant (name, []))
 
 parseInputPrefix :: Parser VP_Process
 parseInputPrefix = do chan <- parseName

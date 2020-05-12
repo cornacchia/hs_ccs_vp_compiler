@@ -1,14 +1,18 @@
 module CompileCCS where
 import ParseVPCCS
-import ParseExpression
+import ParseExpressionVar
+import Parse
+import EvalExpr
 
+type Def = String
 type Constant = String
 type Channel = String
 type Relabeling = [(Channel, Channel)]
 
 data Process
   = Inaction
-  | Const Constant Process
+  | Definition Def Process
+  | Const Constant
   | InputPrefix Channel Process
   | OutputPrefix Channel Process
   | TauPrefix Process
@@ -22,39 +26,49 @@ type Program = [Process]
 
 -- Define a finite set N of natural numbers
 naturals :: [Int]
-naturals = [1..3]
+--naturals = [1..3]
+naturals = [1]
+--compileSingleInputPrefix :: Int -> VP_Process -> Process
+--compileSingleInputPrefix n (VP_InputPrefix c v p) = InputPrefix (c ++ show n) (compileProcess (VP_Relabel p [(show n, v)]))
 
-compileSingleInputPrefix :: Int -> VP_Process -> Process
-compileSingleInputPrefix n (VP_InputPrefix c v p) = InputPrefix (c ++ show n) (compileProcess (VP_Relabel p [(show n, v)]))
+--compileInputPrefixing :: [Int] -> VP_Process -> Process
+--compileInputPrefixing [n] p = compileSingleInputPrefix n p
+--compileInputPrefixing (n:ns) p = Sum (compileSingleInputPrefix n p) (compileInputPrefixing ns p)
 
-compileInputPrefixing :: [Int] -> VP_Process -> Process
-compileInputPrefixing [n] p = compileSingleInputPrefix n p
-compileInputPrefixing (n:ns) p = Sum (compileSingleInputPrefix n p) (compileInputPrefixing ns p)
+showExpression :: Expr -> Context -> String
+showExpression (EInt n) ctx = show (evalIntExpr n ctx)
+showExpression (EBool b) ctx = show (evalBoolExpr b ctx)
 
-showExpression :: Expr -> String
-showExpression (EInt n) = show n
-showExpression (EBool b) = show b
+translateExpressions :: [Expr] -> Context -> String
+translateExpressions [] _ = []
+translateExpressions [x] ctx = showExpression x ctx
+translateExpressions (x:xs) ctx = (showExpression x ctx) ++ ", " ++ (translateExpressions xs ctx)
 
-translateExpressions :: [Expr] -> String
-translateExpressions [] = []
-translateExpressions [x] = showExpression x
-translateExpressions (x:xs) = (showExpression x) ++ ", " ++ (translateExpressions xs)
+translateContext :: Context -> String
+translateContext [] = []
+translateContext (x:xs) = show (snd x) ++ "," ++ translateContext xs
 
-compileProcess :: VP_Process -> Process
-compileProcess VP_Inaction = Inaction
-compileProcess (VP_TauPrefix p) = TauPrefix (compileProcess p)
-compileProcess (VP_Sum p1 p2) = Sum (compileProcess p1) (compileProcess p2)
-compileProcess (VP_Parallel p1 p2) = Parallel (compileProcess p1) (compileProcess p2)
-compileProcess (VP_OutputPrefix c e p) = OutputPrefix (c ++ showExpression e) (compileProcess p)
-compileProcess (VP_Restriction p cs) = Restriction (compileProcess p) [c ++ show n | c <- cs, n <- naturals]
-compileProcess (VP_Relabel p r) = Relabel (compileProcess p) [(c1 ++ show n, c2 ++ show n) | (c1, c2) <- r, n <- naturals]
-compileProcess (VP_IfThen (EBool True) p) = (compileProcess p)
-compileProcess (VP_IfThen _ p) = Inaction
-compileProcess (VP_InputPrefix x v p) = compileInputPrefixing naturals (VP_InputPrefix x v p)
-compileProcess (VP_Const c es p) = Const (c ++ translateExpressions es) (compileProcess (VP_Relabel p [(show e, "x" ++ show i) | (e, i) <- zip es [1..]]))
+compileProcess :: VP_Process -> Context -> Process
+compileProcess VP_Inaction _ = Inaction
+compileProcess (VP_Constant (c, es)) ctx = Const (c ++ (translateExpressions es ctx))
+compileProcess (VP_TauPrefix p) ctx = TauPrefix (compileProcess p ctx)
+compileProcess (VP_Sum p1 p2) ctx = Sum (compileProcess p1 ctx) (compileProcess p2 ctx)
+compileProcess (VP_Parallel p1 p2) ctx = Parallel (compileProcess p1 ctx) (compileProcess p2 ctx)
+compileProcess (VP_OutputPrefix c e p) ctx = OutputPrefix (c ++ (showExpression e ctx)) (compileProcess p ctx)
+--compileProcess (VP_Restriction p cs) = Restriction (compileProcess p) [c ++ show n | c <- cs, n <- naturals]
+--compileProcess (VP_Relabel p r) = Relabel (compileProcess p) [(c1 ++ show n, c2 ++ show n) | (c1, c2) <- r, n <- naturals]
+compileProcess (VP_IfThen (EBool bexpr) p) ctx = if (evalBoolExpr bexpr ctx) then (compileProcess p ctx) else Inaction
+compileProcess (VP_IfThen _ _) _ = error "Non boolean expression used as condition in conditional statement (if then else)"
+--compileProcess (VP_InputPrefix x v p) = compileInputPrefixing naturals (VP_InputPrefix x v p)
+compileProcess (VP_Definition (c, vs) p) ctx = Definition (c ++ (translateContext ctx)) (compileProcess p ctx)
+
 
 compiler :: VP_Program -> Program
-compiler = map compileProcess
+compiler [] = []
+compiler ((VP_Definition (c, vs) p):ps) = [compileProcess (VP_Definition (c, vs) p) ctx | ctx <- (generateContexts naturals vs)] ++ (compiler ps)
+compiler (p:ps) = (compileProcess p []) : (compiler ps)
 
 compileProgram :: [(VP_Program, String)] -> Program
 compileProgram [(p, "")] = compiler p
+
+test input = compileProgram (parse parseProg input)

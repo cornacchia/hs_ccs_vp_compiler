@@ -13,7 +13,7 @@ data VP_Process
   = VP_Inaction
   | VP_Definition VP_Def VP_Process
   | VP_Constant VP_Const
-  | VP_InputPrefix VP_Channel VP_Var VP_Process
+  | VP_InputPrefix VP_Channel Expr VP_Process
   | VP_OutputPrefix VP_Channel Expr VP_Process
   | VP_TauPrefix VP_Process
   | VP_IfThen Expr VP_Process
@@ -72,7 +72,7 @@ parseInputPrefix = do chan <- parseName
                       symbol ")"
                       symbol "."
                       proc <- parseProcess
-                      return (VP_InputPrefix chan var proc)
+                      return (VP_InputPrefix chan (EInt (EIntVar var)) proc)
 
 parseOutputPrefix :: Parser VP_Process
 parseOutputPrefix = do symbol "'"

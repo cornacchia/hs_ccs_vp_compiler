@@ -1,8 +1,9 @@
 import System.IO
 import Parse
-import ParseProg
+import ParseVPCCS
+import CompileCCS
+import PrettyPrinter
 
-readloop :: IO String
 readloop inh = do ineof <- hIsEOF inh
                   if ineof
                     then return []
@@ -12,16 +13,10 @@ readloop inh = do ineof <- hIsEOF inh
                       return (x ++ " " ++ xs)
 
 readF :: IO String
-readF = do inh <- openFile "./test/input1.txt" ReadMode
+readF = do inh <- openFile "./test/input1" ReadMode
            prog <- readloop inh
            hClose inh
            return prog
 
-comp :: [(Program Name, Name)] -> Program Name
-comp [] = error "no parse"
-comp [(e,[])] = e
-comp [(_,a)] = error ("doesn't use all input" ++ a)
-
-main :: IO (Program Name)
 main = do inp <- readF
-          return (comp (parse parseProg inp))
+          printProgram (compileProgram (parse parseProg inp))

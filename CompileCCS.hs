@@ -27,13 +27,7 @@ type Program = [Process]
 -- Define a finite set N of natural numbers
 naturals :: [Int]
 --naturals = [1..3]
-naturals = [1]
---compileSingleInputPrefix :: Int -> VP_Process -> Process
---compileSingleInputPrefix n (VP_InputPrefix c v p) = InputPrefix (c ++ show n) (compileProcess (VP_Relabel p [(show n, v)]))
-
---compileInputPrefixing :: [Int] -> VP_Process -> Process
---compileInputPrefixing [n] p = compileSingleInputPrefix n p
---compileInputPrefixing (n:ns) p = Sum (compileSingleInputPrefix n p) (compileInputPrefixing ns p)
+naturals = [1, 2]
 
 showExpression :: Expr -> Context -> String
 showExpression (EInt n) ctx = show (evalIntExpr n ctx)
@@ -48,6 +42,13 @@ translateContext :: Context -> String
 translateContext [] = []
 translateContext (x:xs) = show (snd x) ++ "," ++ translateContext xs
 
+compileInputPrefixing :: VP_Process -> Context -> (String, Int) -> Process
+compileInputPrefixing (VP_InputPrefix c e p) ctx d = InputPrefix (c ++ (showExpression e (d:ctx))) (compileProcess p (d:ctx))
+
+compileInputPrefixings :: VP_Process -> Context -> Context -> Process
+compileInputPrefixings p ctx [d] = compileInputPrefixing p ctx d
+compileInputPrefixings p ctx (d:ds) = Sum (compileInputPrefixing p ctx d) (compileInputPrefixings p ctx ds)
+
 compileProcess :: VP_Process -> Context -> Process
 compileProcess VP_Inaction _ = Inaction
 compileProcess (VP_Constant (c, es)) ctx = Const (c ++ (translateExpressions es ctx))
@@ -59,9 +60,8 @@ compileProcess (VP_OutputPrefix c e p) ctx = OutputPrefix (c ++ (showExpression 
 --compileProcess (VP_Relabel p r) = Relabel (compileProcess p) [(c1 ++ show n, c2 ++ show n) | (c1, c2) <- r, n <- naturals]
 compileProcess (VP_IfThen (EBool bexpr) p) ctx = if (evalBoolExpr bexpr ctx) then (compileProcess p ctx) else Inaction
 compileProcess (VP_IfThen _ _) _ = error "Non boolean expression used as condition in conditional statement (if then else)"
---compileProcess (VP_InputPrefix x v p) = compileInputPrefixing naturals (VP_InputPrefix x v p)
+compileProcess (VP_InputPrefix x (EInt (EIntVar v)) p) ctx = compileInputPrefixings (VP_InputPrefix x (EInt (EIntVar v)) p) ctx (concat (generateContexts naturals [v]))
 compileProcess (VP_Definition (c, vs) p) ctx = Definition (c ++ (translateContext ctx)) (compileProcess p ctx)
-
 
 compiler :: VP_Program -> Program
 compiler [] = []

@@ -40,6 +40,7 @@ translateExpressions (x:xs) ctx = (showExpression x ctx) ++ ", " ++ (translateEx
 
 translateContext :: Context -> String
 translateContext [] = []
+translateContext [x] = show (snd x)
 translateContext (x:xs) = show (snd x) ++ "," ++ translateContext xs
 
 compileInputPrefixing :: VP_Process -> Context -> (String, Int) -> (Process, [(Channel, Int)])

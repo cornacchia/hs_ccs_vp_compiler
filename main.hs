@@ -4,6 +4,7 @@ import ParseVPCCS
 import CompileCCS
 import PrettyPrinter
 
+readloop :: Handle -> IO [Char]
 readloop inh = do ineof <- hIsEOF inh
                   if ineof
                     then return []
@@ -18,5 +19,6 @@ readF = do inh <- openFile "./test/input1" ReadMode
            hClose inh
            return prog
 
+main :: IO()
 main = do inp <- readF
           printProgram (compileProgram (parse parseProg inp))

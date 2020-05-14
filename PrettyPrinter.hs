@@ -22,8 +22,10 @@ translateProcess (Sum p1 p2) = (translateProcess p1) ++ " + " ++ (translateProce
 translateProcess (Restriction p cs) = "(" ++ (translateProcess p) ++ ")\\" ++ (translateRestriction cs)
 translateProcess (Relabel p r) = "(" ++ (translateProcess p) ++ ")" ++ (translateRelabeling r)
 
+printProcess :: Process -> IO()
 printProcess = putStrLn . translateProcess
 
+printProgram :: Program -> IO()
 printProgram [] = putStrLn ""
 printProgram (p:ps) = do printProcess p
                          printProgram ps

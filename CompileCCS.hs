@@ -91,5 +91,3 @@ compiler (p:ps) = (fst (compileProcess p [])) : (compiler ps)
 
 compileProgram :: [(VP_Program, String)] -> Program
 compileProgram [(p, "")] = compiler p
-
-test input = compileProgram (parse parseProg input)

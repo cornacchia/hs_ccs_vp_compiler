@@ -1,4 +1,5 @@
 import System.IO
+import System.Environment
 import Parse
 import ParseVPCCS
 import CompileCCS
@@ -14,7 +15,8 @@ readloop inh = do ineof <- hIsEOF inh
                       return (x ++ " " ++ xs)
 
 readF :: IO String
-readF = do inh <- openFile "./test/input1" ReadMode
+readF = do args <- getArgs
+           inh <- openFile (head args) ReadMode
            prog <- readloop inh
            hClose inh
            return prog

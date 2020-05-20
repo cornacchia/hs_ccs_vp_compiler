@@ -5,7 +5,7 @@ import Parse
 data Expr
   = EInt IntegerExpression
   | EBool BooleanExpression
-  deriving Show
+  deriving (Show, Eq)
 
 data IntegerExpression
   = EMult IntegerExpression IntegerExpression
@@ -15,7 +15,7 @@ data IntegerExpression
   | ENegate IntegerExpression
   | EIntNat Int
   | EIntVar String
-  deriving Show
+  deriving (Show, Eq)
 
 data BooleanExpression
   = EAnd BooleanExpression BooleanExpression
@@ -31,7 +31,7 @@ data BooleanExpression
   | EILet IntegerExpression IntegerExpression
   | EBoolValue Bool
   | EBoolVar String
-  deriving Show
+  deriving (Show, Eq)
 
 parseExprParens :: Parser [Expr]
 parseExprParens = do symbol "("

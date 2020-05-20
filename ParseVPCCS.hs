@@ -21,7 +21,7 @@ data VP_Process
   | VP_Sum VP_Process VP_Process
   | VP_Restriction VP_Process [VP_Channel]
   | VP_Relabel VP_Process VP_Relabeling
-  deriving Show
+  deriving (Show, Eq)
 
 type VP_Program = [VP_Process]
 

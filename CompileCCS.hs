@@ -20,7 +20,7 @@ data Process
   | Sum Process Process
   | Restriction Process [Channel]
   | Relabel Process Relabeling
-  deriving Show
+  deriving (Show, Eq)
 
 type Program = [Process]
 

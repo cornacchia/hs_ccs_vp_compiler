@@ -15,8 +15,9 @@ readloop inh = do ineof <- hIsEOF inh
                       return (x ++ " " ++ xs)
 
 readF :: IO String
-readF = do args <- getArgs
-           inh <- openFile (head args) ReadMode
+readF = do putStrLn "Type the path of the CCS-VP source file to compile and press ENTER:"
+           path <- getLine
+           inh <- openFile path ReadMode
            prog <- readloop inh
            hClose inh
            return prog

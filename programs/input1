@@ -1,0 +1,2 @@
+B = in(x) . BB(x)
+BB (x) = ('out(x + 1) . B)\{out}

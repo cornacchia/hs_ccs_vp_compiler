@@ -17,14 +17,18 @@ translateProcess (Const c) = c
 translateProcess (InputPrefix c p) = c ++ ". (" ++ (translateProcess p) ++ ")"
 translateProcess (OutputPrefix c p) = "'" ++ c ++ "." ++ (translateProcess p)
 translateProcess (TauPrefix p) = "tau." ++ (translateProcess p)
-translateProcess (Parallel p1 p2) = (translateProcess p1) ++ " | " ++ (translateProcess p2)
-translateProcess (Sum p1 p2) = (translateProcess p1) ++ " + " ++ (translateProcess p2)
+translateProcess (Parallel p1 p2) = "(" ++ (translateProcess p1) ++ ") | (" ++ (translateProcess p2) ++ ")"
+translateProcess (Sum p1 p2) = "(" ++ (translateProcess p1) ++ ") + (" ++ (translateProcess p2) ++ ")"
 translateProcess (Restriction p cs) = "(" ++ (translateProcess p) ++ ")\\" ++ (translateRestriction cs)
 translateProcess (Relabel p r) = "(" ++ (translateProcess p) ++ ")" ++ (translateRelabeling r)
 
 translateProgram :: Program -> [String]
 translateProgram (p:ps) = translateProcess p : translateProgram ps
 translateProgram [] = []
+
+printProgramCompact :: Program -> String
+printProgramCompact p = head progStrings ++ foldl (\xs x -> xs ++ ";" ++ x) "" (tail progStrings)
+                        where progStrings = translateProgram p
 
 printProgram :: Program -> IO()
 printProgram p = mapM_ putStrLn (translateProgram p)

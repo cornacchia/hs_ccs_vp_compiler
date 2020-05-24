@@ -30,10 +30,14 @@ compilerTests =
   , ("in(x).K", [Sum (InputPrefix "in1" (Const "K")) (InputPrefix "in2" (Const "K"))])
     -- Input prefix (constant with variables)
   , ("in(x).K(x)", [Sum (InputPrefix "in1" (Const "K1")) (InputPrefix "in2" (Const "K2"))])
+    -- Input prefix on same variable
+  , ("in(x).in(x).0", [Sum (InputPrefix "in1" (Sum (InputPrefix "in1" Inaction) (InputPrefix "in2" Inaction))) (InputPrefix "in2" (Sum (InputPrefix "in1" Inaction) (InputPrefix "in2" Inaction)))])
     -- Output prefix
   , ("'out(1).0", [OutputPrefix "out1" Inaction])
     -- Input prefix with output prefix
   , ("in(x).'out(x+1).0", [Sum (InputPrefix "in1" (OutputPrefix "out2" Inaction)) (InputPrefix "in2" (OutputPrefix "out3" Inaction))])
+    -- Multiple input prefix with output prefix
+  , ("in(x).in(y).'out(x + y).0", [Sum (InputPrefix "in1" (Sum (InputPrefix "in1" (OutputPrefix "out2" Inaction)) (InputPrefix "in2" (OutputPrefix "out3" Inaction)))) (InputPrefix "in2" (Sum (InputPrefix "in1" (OutputPrefix "out3" Inaction)) (InputPrefix "in2" (OutputPrefix "out4" Inaction))))] )
     -- Tau prefix
   , ("tau.0", [TauPrefix Inaction])
     -- Parallel processes

@@ -130,7 +130,7 @@ parseBool3 = do symbol "!"
                <|> parseBool4
 
 parseBool4 :: Parser BooleanExpression
-parseBool4 = parseTrue <|> parseFalse <|> parseBoolExprParens
+parseBool4 = parseBoolExprParens <|> parseTrue <|> parseFalse <|> parseBoolExprVar
 
 parseTrue :: Parser BooleanExpression
 parseTrue = do symbol "True"
@@ -147,7 +147,7 @@ parseBoolExprParens = do symbol "("
                          return e
 
 parseBoolExprVar :: Parser BooleanExpression
-parseBoolExprVar = do v <- token (some alphanum)
+parseBoolExprVar = do v <- token variable
                       return (EBoolVar v)
 
 parseComparisonSymbol :: Parser String

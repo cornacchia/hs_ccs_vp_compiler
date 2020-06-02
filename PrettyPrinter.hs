@@ -1,5 +1,5 @@
 module PrettyPrinter where
-import CompileCCS
+import Compile
 
 translateSingleRelabeling :: (Channel, Channel) -> String
 translateSingleRelabeling (c1, c2) = c1 ++ "/" ++ c2

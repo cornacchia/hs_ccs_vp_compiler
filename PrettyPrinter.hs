@@ -12,7 +12,7 @@ translateRestriction xs = "{" ++ (concat [c ++ "," | c <- init xs]) ++ last xs +
 
 translateProcess :: Process -> String
 translateProcess Inaction = "0"
-translateProcess (Definition d p) = d ++ " = " ++ (translateProcess p)
+translateProcess (Definition d _ p) = d ++ " = " ++ (translateProcess p)
 translateProcess (Const c) = c
 translateProcess (InputPrefix c p) = c ++ ". (" ++ (translateProcess p) ++ ")"
 translateProcess (OutputPrefix c p) = "'" ++ c ++ "." ++ (translateProcess p)

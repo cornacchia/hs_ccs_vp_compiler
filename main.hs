@@ -1,8 +1,10 @@
 import System.IO
 import System.Environment
+import qualified Data.Map.Strict as Map
 import Parse
 import ParseVPCCS
-import CompileCCS
+import Compile
+import Context
 import PrettyPrinter
 
 readloop :: Handle -> IO [Char]
@@ -24,4 +26,4 @@ readF = do putStrLn "Type the path of the CCS-VP source file to compile and pres
 
 main :: IO()
 main = do inp <- readF
-          printProgram (compileProgram (parse parseProg inp))
+          printProgram (compileProgram (parse parseProg (Map.fromList []) inp) testContext)

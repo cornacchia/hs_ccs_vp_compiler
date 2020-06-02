@@ -12,7 +12,7 @@ type Relabeling = [(Channel, Channel)]
 
 data Process
   = Inaction
-  | Definition Def Process
+  | Definition Def Bool Process
   | Const Constant
   | InputPrefix Channel Process
   | OutputPrefix Channel Process
@@ -55,9 +55,9 @@ sumProcesses ((p,b,c):ps) = (Sum p rp, addBindings b rb, c ++ rc)
 
 compIP :: VP_Process -> Context -> Bindings -> [(Process, Bindings, [Constant])]
 compIP (VP_InputPrefix c (EInt (EIntVar v)) p) ctx b = do (cp, nb, cs) <- comp p (addCtxBindings ctx b)
-                                                          return (InputPrefix (extractIntChanName v c b) cp, addIntBindings (c, (extractIntBinding v b) ) nb, [])
+                                                          return (InputPrefix (extractIntChanName v c b) cp, addIntBindings (c, (extractIntBinding v b) ) nb, cs)
 compIP (VP_InputPrefix c (EBool (EBoolVar v)) p) ctx b = do (cp, nb, cs) <- comp p (addCtxBindings ctx b)
-                                                            return (InputPrefix (extractBoolChanName v c b) cp, addBoolBindings (c, (extractBoolBinding v b) ) nb, [])
+                                                            return (InputPrefix (extractBoolChanName v c b) cp, addBoolBindings (c, (extractBoolBinding v b) ) nb, cs)
 
 -- This function receives the usual "global" Context and a list of integer and boolean bindings
 compIPs :: VP_Process -> Context -> [Bindings] -> [(Process, Bindings, [Constant])]
@@ -68,7 +68,7 @@ compIPs p ctx bs = case concat (filter (not . null) (map (compIP p ctx) bs)) of
 
 compDef :: VP_Process -> Context -> Bindings -> [(Process, Bindings, [Constant])]
 compDef (VP_Definition (c, exs) p) ctx b = do (cp, nb, cs) <- comp p (addCtxBindings ctx b)
-                                              return (Definition (defName c b) cp, nb, [])
+                                              return (Definition (defName c b) ((not.null) exs) cp, nb, cs)
 
 compDefns :: VP_Process -> Context -> [Bindings] -> [(Process, Bindings, [Constant])]
 compDefns p ctx [b] = compDef p ctx b
@@ -146,14 +146,24 @@ comp (VP_Definition (v, exs) p) ctx = compDefns (VP_Definition (v, exs) p) ctx (
 getProc :: (Process, Bindings, [Constant]) -> Process
 getProc (p, _, _) = p
 
-compiler :: VP_Program -> Context -> Program
-compiler [] _ = []
--- compiler (p:ps) ctx = case (comp p ctx) of
---                       [(p, _, c)] -> (p : (compiler ps ctx))
---                       [] -> (compiler ps ctx)
-compiler (p:ps) ctx = cps ++ compiler ps ctx
-                      where cps = map getProc (comp p ctx)
+getConst :: (Process, Bindings, [Constant]) -> [Constant]
+getConst (_, _, c) = c
+
+compiler :: VP_Program -> Context -> (Program, [Constant])
+compiler [] _ = ([], [])
+compiler (p:ps) ctx = (cps ++ ccp, csts ++ ccs)
+                      where cmpr = (comp p ctx)
+                            cps = map getProc cmpr
+                            csts = concat (map getConst cmpr)
+                            (ccp, ccs) = compiler ps ctx
+
+cleanProgram :: Program -> [Constant] -> Program
+cleanProgram ((Definition name True p):ps) const = if elem name const then (Definition name True p):rest else rest
+                                              where rest = cleanProgram ps const
+cleanProgram (p:ps) const = p:(cleanProgram ps const)
+cleanProgram [] _ = []
 
 compileProgram :: [(VP_Program, String, ParserContext)] -> Context -> Program
-compileProgram [(p, "", _)] ctx = compiler p ctx
+compileProgram [(p, "", _)] ctx = cleanProgram prog const
+                                  where (prog, const) = compiler p ctx
 compileProgram [(p, s, _)] _ = error ("Non-exhaustive parse: " ++ s)

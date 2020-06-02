@@ -5,7 +5,7 @@ type Context = ([Int], [Bool], [(String, Int)], [(String, Bool)])
 type Bindings = ([(String, Int)], [(String, Bool)])
 
 testContext :: Context
-testContext = ([1..2], [True, False], [], [])
+testContext = ([1..3], [True, False], [], [])
 
 emptyBindings :: Bindings
 emptyBindings = ([], [])

@@ -33,9 +33,9 @@ parseTypedVar :: Parser Expr
 parseTypedVar = do v <- parseName
                    symbol ":"
                    do symbol "Bool"
-                      return (EBool (EBoolVar v))
+                      updateParserContext v "Bool" (return (EBool (EBoolVar v)))
                     <|> do symbol "Int"
-                           return (EInt (EIntVar v))
+                           updateParserContext v "Int" (return (EInt (EIntVar v)))
 
 
 parseVars :: Parser [Expr]

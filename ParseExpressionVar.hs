@@ -99,8 +99,9 @@ parseIntExprNat = do n <- nat
                      return (EIntNat n)
 
 parseIntExprVar :: Parser IntegerExpression
-parseIntExprVar = do v <- token variable
-                     return (EIntVar v)
+parseIntExprVar = P (\ctx inp -> case parse (token variable) ctx inp of
+                      [] -> []
+                      [(v, out, c)] -> if varInContext v "Int" ctx then [((EIntVar v), out, c)] else [])
 
 parseBoolExpr :: Parser Expr
 parseBoolExpr = do b <- parseBool0
@@ -147,8 +148,9 @@ parseBoolExprParens = do symbol "("
                          return e
 
 parseBoolExprVar :: Parser BooleanExpression
-parseBoolExprVar = do v <- token variable
-                      return (EBoolVar v)
+parseBoolExprVar = P (\ctx inp -> case parse (token variable) ctx inp of
+                       [] -> []
+                       [(v, out, c)] -> if varInContext v "Bool" ctx then [((EBoolVar v), out, c)] else [])
 
 parseComparisonSymbol :: Parser String
 parseComparisonSymbol = symbol "==" <|> symbol "!=" <|> symbol "<=" <|> symbol "<" <|> symbol ">=" <|> symbol ">"

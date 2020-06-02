@@ -2,46 +2,59 @@ module Parse where
 
 import Control.Applicative
 import Data.Char
+import qualified Data.Map.Strict as Map
 
-newtype Parser a = P (String -> [(a, String)])
+type ParserContext = Map.Map String String
+newtype Parser a = P (ParserContext -> String -> [(a, String, Map.Map String String)])
 
-parse :: Parser a -> String -> [(a, String)]
-parse (P p) inp = p inp
+parse :: Parser a -> ParserContext -> String -> [(a, String, ParserContext)]
+parse (P p) ctx inp = p ctx inp
 
 instance Functor Parser where
   -- fmap :: (a -> b) -> Parser a -> Parser b
-  fmap f p = P (\inp -> case parse p inp of
+  fmap f p = P (\ctx inp -> case parse p ctx inp of
                   [] -> []
-                  [(x, xs)] -> [(f x, xs)])
+                  [(x, xs, c)] -> [(f x, xs, c)])
 
 instance Applicative Parser where
   -- pure :: a -> Parser a
-  pure x = P (\inp -> [(x, inp)])
+  pure x = P (\ctx inp -> [(x, inp, ctx)])
 
   -- (<*>) :: Parser (a -> b) -> Parser a -> Parser b
-  fp <*> xp = P (\inp -> case parse fp inp of
+  fp <*> xp = P (\ctx inp -> case parse fp ctx inp of
                   [] -> []
-                  [(f, xs)] -> parse (fmap f xp) xs)
+                  [(f, xs, c)] -> parse (fmap f xp) c xs)
 
 instance Monad Parser where
   -- (>>=) :: Parser a -> (a -> Parser b) -> Parser b
-  px >>= f = P (\inp -> case parse px inp of
+  px >>= f = P (\ctx inp -> case parse px ctx inp of
                   [] -> []
-                  [(x, out)] -> parse (f x) out)
+                  [(x, out, c)] -> parse (f x) c out)
 
 instance Alternative Parser where
   -- empty :: Parser a
-  empty = P (\inp -> [])
+  empty = P (\ctx inp -> [])
 
   -- (<|>) :: Parser a -> Parser a -> Parser a
-  p <|> q = P (\inp -> case parse p inp of
-                [] -> parse q inp
-                [(v, out)] -> [(v, out)])
+  p <|> q = P (\ctx inp -> case parse p ctx inp of
+                [] -> parse q ctx inp
+                [(v, out, c)] -> [(v, out, c)])
+
+varInContext :: String -> String -> ParserContext -> Bool
+varInContext n t ctx = case Map.lookup n ctx of
+                       (Just tt) -> t == tt
+                       _ -> False
+
+addValToParserContext :: String -> String -> ParserContext -> ParserContext
+addValToParserContext n t ctx = Map.insert n t ctx
+
+updateParserContext :: String -> String -> Parser a -> Parser a
+updateParserContext n t p = P (\ctx inp -> parse p (addValToParserContext n t ctx) inp)
 
 item :: Parser Char
-item = P (\inp -> case inp of
+item = P (\ctx inp -> case inp of
             [] -> []
-            (x:xs) -> [(x, xs)])
+            (x:xs) -> [(x, xs, ctx)])
 
 sat :: (Char -> Bool) -> Parser Char
 sat cond = do p <- item

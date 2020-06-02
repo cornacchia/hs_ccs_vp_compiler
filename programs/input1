@@ -1,2 +1,2 @@
-B = in(x) . BB(x)
-BB (x) = ('out(x + 1) . B)\{out}
+B = in(x:Int) . BB(x)
+BB (x:Int) = ('out(x + 1) . B)\{out}

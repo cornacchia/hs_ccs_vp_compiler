@@ -1,0 +1,2 @@
+B = in(x:Int). BB(x + 1)
+BB(x:Int) = if x > 2 then tau. 0

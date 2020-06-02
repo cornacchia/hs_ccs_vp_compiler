@@ -106,18 +106,6 @@ parseIfThen = do symbol "if"
                  proc <- parseProcess
                  return (VP_IfThen b proc)
 
-parseParallel :: Parser VP_Process
-parseParallel = do p1 <- parseProcess
-                   symbol "|"
-                   p2 <- parseProcess
-                   return (VP_Parallel p1 p2)
-
-parseSum :: Parser VP_Process
-parseSum = do p <- parseProcess
-              do symbol "+"
-                 ps <- parseSum
-                 return (VP_Sum p ps)
-
 parseNames :: Parser [String]
 parseNames = do n <- parseName
                 do symbol ","

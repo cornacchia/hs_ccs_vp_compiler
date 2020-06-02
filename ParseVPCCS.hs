@@ -3,7 +3,7 @@ import Control.Applicative
 import Parse
 import ParseExpressionVar
 
-type VP_Def = (String, [String])
+type VP_Def = (String, [Expr])
 type VP_Const = (String, [Expr])
 type VP_Channel = String
 type VP_Var = String
@@ -29,18 +29,27 @@ parseInaction :: Parser VP_Process
 parseInaction = do symbol "0"
                    return VP_Inaction
 
-parseVars :: Parser [String]
-parseVars = do v <- parseName
+parseTypedVar :: Parser Expr
+parseTypedVar = do v <- parseName
+                   symbol ":"
+                   do symbol "Bool"
+                      return (EBool (EBoolVar v))
+                    <|> do symbol "Int"
+                           return (EInt (EIntVar v))
+
+
+parseVars :: Parser [Expr]
+parseVars = do v <- parseTypedVar
                do symbol ","
                   vs <- parseVars
                   return (v:vs)
                  <|> return [v]
 
-parseVarParens :: Parser [String]
+parseVarParens :: Parser [Expr]
 parseVarParens = do symbol "("
-                    do exprs <- parseVars
+                    do vars <- parseVars
                        symbol ")"
-                       return exprs
+                       return vars
                       <|> do symbol ")"
                              return []
                    <|> return []
@@ -68,11 +77,11 @@ parseConstant = do name <- parseName
 parseInputPrefix :: Parser VP_Process
 parseInputPrefix = do chan <- parseName
                       symbol "("
-                      var <- parseName
+                      var <- parseTypedVar
                       symbol ")"
                       symbol "."
                       proc <- parseProcess
-                      return (VP_InputPrefix chan (EInt (EIntVar var)) proc)
+                      return (VP_InputPrefix chan var proc)
 
 parseOutputPrefix :: Parser VP_Process
 parseOutputPrefix = do symbol "'"

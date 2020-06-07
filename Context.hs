@@ -4,11 +4,12 @@ import ParseExpressionVar
 type Context = ([Int], [Bool], [(String, Int)], [(String, Bool)])
 type Bindings = ([(String, Int)], [(String, Bool)])
 
-testContext :: Context
-testContext = ([1..3], [True, False], [], [])
-
 emptyBindings :: Bindings
 emptyBindings = ([], [])
+
+anyBindings :: Bindings -> Bool
+anyBindings ([], []) = False
+anyBindings _ = True
 
 genBindings :: Expr -> Context -> [Bindings]
 genBindings (EInt (EIntVar v)) (is,_,_,_) = [([(v, i)], []) | i <- is]

@@ -7,6 +7,15 @@ import Compile
 import Context
 import PrettyPrinter
 
+naturals :: [Int]
+naturals = [1..3]
+
+booleans :: [Bool]
+booleans = [True, False]
+
+mainContext :: Context
+mainContext = (naturals, booleans, [], [])
+
 readloop :: Handle -> IO [Char]
 readloop inh = do ineof <- hIsEOF inh
                   if ineof
@@ -26,4 +35,4 @@ readF = do putStrLn "Type the path of the CCS-VP source file to compile and pres
 
 main :: IO()
 main = do inp <- readF
-          printProgram (compileProgram (parse parseProg (Map.fromList []) inp) testContext)
+          printProgram (compileProgram (parse parseProg emptyParserContext inp) mainContext)

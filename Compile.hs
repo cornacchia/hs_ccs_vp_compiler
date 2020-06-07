@@ -128,10 +128,10 @@ comp (VP_OutputPrefix c (EBool be) p) ctx = case bv of
                                            where bv = evalBoolExpr be ctx
 -- Restriction (p: process, chs: channels)
 comp (VP_Restriction p chs) ctx = do (cp, nb, cs) <- comp p ctx
-                                     return (Restriction cp (calcRestrictions nb chs), nb, cs)
+                                     return (if anyBindings nb then (Restriction cp (calcRestrictions nb chs), nb, cs) else (cp, nb, cs))
 -- Relabeling (p: process, r: relabeling)
 comp (VP_Relabel p r) ctx = do (cp, nb, cs) <- comp p ctx
-                               return (Relabel cp (calcRelabel nb r), nb, cs)
+                               return (if anyBindings nb then (Relabel cp (calcRelabel nb r), nb, cs) else (cp, nb, cs))
 -- IfThen (bexp: boolean expression, p: process)
 comp (VP_IfThen (EBool bexpr) p) ctx = case bval of
                                        (Just True) -> (comp p ctx)
@@ -158,8 +158,9 @@ compiler (p:ps) ctx = (cps ++ ccp, csts ++ ccs)
                             (ccp, ccs) = compiler ps ctx
 
 cleanProgram :: Program -> [Constant] -> Program
+-- Only check definitions which have expressions attached
 cleanProgram ((Definition name True p):ps) const = if elem name const then (Definition name True p):rest else rest
-                                              where rest = cleanProgram ps const
+                                                   where rest = cleanProgram ps const
 cleanProgram (p:ps) const = p:(cleanProgram ps const)
 cleanProgram [] _ = []
 

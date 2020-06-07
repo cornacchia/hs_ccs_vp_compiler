@@ -7,6 +7,9 @@ import qualified Data.Map.Strict as Map
 type ParserContext = Map.Map String String
 newtype Parser a = P (ParserContext -> String -> [(a, String, Map.Map String String)])
 
+emptyParserContext :: ParserContext
+emptyParserContext = Map.fromList []
+
 parse :: Parser a -> ParserContext -> String -> [(a, String, ParserContext)]
 parse (P p) ctx inp = p ctx inp
 

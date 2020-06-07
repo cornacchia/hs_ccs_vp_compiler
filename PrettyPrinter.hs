@@ -27,7 +27,7 @@ translateProgram (p:ps) = translateProcess p : translateProgram ps
 translateProgram [] = []
 
 printProgramCompact :: Program -> String
-printProgramCompact p = head progStrings ++ foldl (\xs x -> xs ++ ";" ++ x) "" (tail progStrings)
+printProgramCompact p = head progStrings ++ foldl (\xs x -> xs ++ "; " ++ x) "" (tail progStrings)
                         where progStrings = translateProgram p
 
 printProgram :: Program -> IO()

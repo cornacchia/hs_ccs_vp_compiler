@@ -1,2 +1,2 @@
-B = in(x:Int). BB(x + 1)
-BB(x:Int) = if x > 2 then tau. 0
+P = in(x:Int). PP(x + 1)
+PP(x:Int) = if x > 2 then tau. 0 else 'out(x). 0

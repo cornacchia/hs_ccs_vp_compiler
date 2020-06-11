@@ -1,0 +1,3 @@
+P = boolIn(b : Bool). intIn(x : Int). PP(b, x)
+PP(b : Bool, x : Int) = 'out(x + 1). 0 | if b then tau. 0 else 'out(x). 0 + in(y : Int). PPP(y)
+PPP(x : Int) = 'out(x > 2). 0

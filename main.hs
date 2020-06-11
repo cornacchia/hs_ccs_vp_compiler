@@ -36,3 +36,9 @@ readF = do putStrLn "Type the path of the CCS-VP source file to compile and pres
 main :: IO()
 main = do inp <- readF
           printProgram (compileProgram (parse parseProg emptyParserContext inp) mainContext)
+
+main2 :: String -> IO()
+main2 path = do inh <- openFile path ReadMode
+                prog <- readloop inh
+                hClose inh
+                printProgram (compileProgram (parse parseProg emptyParserContext prog) mainContext)

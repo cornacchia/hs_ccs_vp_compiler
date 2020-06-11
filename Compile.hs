@@ -28,19 +28,10 @@ type Program = [Process]
 chanName :: String -> String -> String
 chanName ch val = ch ++ "_" ++ val
 
-defIntName :: [(String, Int)] -> String
-defIntName [] = ""
-defIntName ((v, n):bs) = (show n) ++ defIntName bs
-
-defBoolName :: [(String, Bool)] -> String
-defBoolName [] = ""
-defBoolName ((v, b):bs) = (show b) ++ defBoolName bs
-
-defName :: String -> Bindings -> String
-defName c ([], []) = c
-defName c (nb, []) = c ++ (defIntName nb)
-defName c ([], bb) = c ++ (defBoolName bb)
-defName c (nb, bb) = c ++ ((defIntName nb) ++ (defBoolName bb))
+bindToStr :: Bindings -> [Expr] -> String
+bindToStr b [] = ""
+bindToStr b ((EInt (EIntVar v)):es) = show (extractIntBinding v b) ++ bindToStr b es
+bindToStr b ((EBool (EBoolVar v)):es) = show (extractBoolBinding v b) ++ bindToStr b es
 
 extractIntChanName :: String -> String -> Bindings -> String
 extractIntChanName v ch b = chanName ch (show (extractIntBinding v b))
@@ -68,7 +59,7 @@ compIPs p ctx bs = case concat (filter (not . null) (map (compIP p ctx) bs)) of
 
 compDef :: VP_Process -> Context -> Bindings -> [(Process, Bindings, [Constant])]
 compDef (VP_Definition (c, exs) p) ctx b = do (cp, nb, cs) <- comp p (addCtxBindings ctx b)
-                                              return (Definition (defName c b) ((not.null) exs) cp, nb, cs)
+                                              return (Definition (c ++ (bindToStr b exs)) ((not.null) exs) cp, nb, cs)
 
 compDefns :: VP_Process -> Context -> [Bindings] -> [(Process, Bindings, [Constant])]
 compDefns p ctx [b] = compDef p ctx b
@@ -133,9 +124,9 @@ comp (VP_Restriction p chs) ctx = do (cp, nb, cs) <- comp p ctx
 comp (VP_Relabel p r) ctx = do (cp, nb, cs) <- comp p ctx
                                return (if anyBindings nb then (Relabel cp (calcRelabel nb r), nb, cs) else (cp, nb, cs))
 -- IfThen (bexp: boolean expression, p: process)
-comp (VP_IfThen (EBool bexpr) p) ctx = case bval of
+comp (VP_IfThen (EBool bexpr) p p1) ctx = case bval of
                                        (Just True) -> (comp p ctx)
-                                       (Just False) -> [(Inaction, emptyBindings, [])]
+                                       (Just False) -> (comp p1 ctx)
                                        (Nothing) -> []
                                        where bval = (evalBoolExpr bexpr ctx)
 -- InputPrefix (c: channel, v: variable, p: process)

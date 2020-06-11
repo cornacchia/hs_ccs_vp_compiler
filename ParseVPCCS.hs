@@ -16,7 +16,7 @@ data VP_Process
   | VP_InputPrefix VP_Channel Expr VP_Process
   | VP_OutputPrefix VP_Channel Expr VP_Process
   | VP_TauPrefix VP_Process
-  | VP_IfThen Expr VP_Process
+  | VP_IfThen Expr VP_Process VP_Process
   | VP_Parallel VP_Process VP_Process
   | VP_Sum VP_Process VP_Process
   | VP_Restriction VP_Process [VP_Channel]
@@ -62,7 +62,7 @@ parseDefinition = do const <- parseName
                      return (VP_Definition (const, vars) proc)
 
 reservedKeywords :: [String]
-reservedKeywords = ["if", "then"]
+reservedKeywords = ["if", "then", "else"]
 
 parseName :: Parser String
 parseName = do v <- token variable
@@ -104,7 +104,10 @@ parseIfThen = do symbol "if"
                  b <- parseBoolExpr
                  symbol "then"
                  proc <- parseProcess
-                 return (VP_IfThen b proc)
+                 do symbol "else"
+                    procElse <- parseProcess
+                    return (VP_IfThen b proc procElse)
+                  <|> return (VP_IfThen b proc VP_Inaction)
 
 parseNames :: Parser [String]
 parseNames = do n <- parseName

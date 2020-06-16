@@ -58,7 +58,7 @@ parseDefinition :: Parser VP_Process
 parseDefinition = do const <- parseName
                      vars <- parseVarParens
                      symbol "="
-                     proc <- parseProcess
+                     proc <- parseProcess1
                      return (VP_Definition (const, vars) proc)
 
 reservedKeywords :: [String]
@@ -80,7 +80,7 @@ parseInputPrefix = do chan <- parseName
                       var <- parseTypedVar
                       symbol ")"
                       symbol "."
-                      proc <- parseProcess
+                      proc <- parseProcess1
                       return (VP_InputPrefix chan var proc)
 
 parseOutputPrefix :: Parser VP_Process
@@ -90,22 +90,22 @@ parseOutputPrefix = do symbol "'"
                        expr <- parseExpression
                        symbol ")"
                        symbol "."
-                       proc <- parseProcess
+                       proc <- parseProcess1
                        return (VP_OutputPrefix chan expr proc)
 
 parseTauPrefix :: Parser VP_Process
 parseTauPrefix = do symbol "tau"
                     symbol "."
-                    proc <- parseProcess
+                    proc <- parseProcess1
                     return (VP_TauPrefix proc)
 
 parseIfThen :: Parser VP_Process
 parseIfThen = do symbol "if"
                  b <- parseBoolExpr
                  symbol "then"
-                 proc <- parseProcess
+                 proc <- parseProcess1
                  do symbol "else"
-                    procElse <- parseProcess
+                    procElse <- parseProcess1
                     return (VP_IfThen b proc procElse)
                   <|> return (VP_IfThen b proc VP_Inaction)
 
@@ -130,7 +130,7 @@ parseRestrictionSet :: Parser [VP_Channel]
 parseRestrictionSet = parseSetOfNames <|> parseSingleName
 
 parseRestriction :: Parser VP_Process
-parseRestriction = do p <- parseProcess
+parseRestriction = do p <- parseProcess1
                       symbol "\\"
                       rest <- parseRestrictionSet
                       return (VP_Restriction p rest)
@@ -149,7 +149,7 @@ parseRelabelingFunction = do r <- parseSingleRelabeling
                                <|> return [r]
 
 parseRelabeling :: Parser VP_Process
-parseRelabeling = do p <- parseProcess
+parseRelabeling = do p <- parseProcess1
                      symbol "["
                      relabeling <- parseRelabelingFunction
                      symbol "]"
@@ -157,7 +157,7 @@ parseRelabeling = do p <- parseProcess
 
 parseParensProcess :: Parser VP_Process
 parseParensProcess = do symbol "("
-                        p <- parseProcess
+                        p <- parseProcess1
                         symbol ")"
                         return p
 

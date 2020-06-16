@@ -1,0 +1,4 @@
+P = in(x : Int).0
+PP = in(x : Bool).0
+PPP = in(x : Int).0
+QQ(x : Int) = tau. 0

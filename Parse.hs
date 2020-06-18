@@ -4,6 +4,7 @@ import Control.Applicative
 import Data.Char
 import qualified Data.Map.Strict as Map
 
+-- Parser context used to keep track of variable types
 type ParserContext = Map.Map String String
 newtype Parser a = P (ParserContext -> String -> [(a, String, Map.Map String String)])
 

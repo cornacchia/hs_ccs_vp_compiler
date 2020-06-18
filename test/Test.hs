@@ -10,7 +10,7 @@ testContext :: Context
 testContext = ([0..2], [True, False], [], [])
 
 testCompile :: String -> Program
-testCompile inp = (compileProgram (parse parseProg emptyParserContext inp) testContext)
+testCompile inp = (compileProgramForTests (parse parseProg emptyParserContext inp) testContext)
 
 compareProgram :: String -> Program -> Bool
 compareProgram inp prog = prog == (testCompile inp)
@@ -34,17 +34,17 @@ compilerTests =
     -- Definition with multiple variables
   , ("P = P(1,2) P(x:Int,y:Int) = 0", [Definition "P" False (Const "P12"),Definition "P12" True Inaction])
     -- Input prefix (constant with no variables)
-  , ("in(x : Int).K", [Sum (InputPrefix "in_0" (Const "K")) (Sum (InputPrefix "in_1" (Const "K")) (InputPrefix "in_2" (Const "K")))])
+  , ("in(x : Int).K", [SumIp (InputPrefix "in_0" (Const "K")) (SumIp (InputPrefix "in_1" (Const "K")) (InputPrefix "in_2" (Const "K")))])
     -- Input prefix (constant with variables)
-  , ("in(x : Int).K(x)", [Sum (InputPrefix "in_0" (Const "K0")) (Sum (InputPrefix "in_1" (Const "K1")) (InputPrefix "in_2" (Const "K2")))])
+  , ("in(x : Int).K(x)", [SumIp (InputPrefix "in_0" (Const "K0")) (SumIp (InputPrefix "in_1" (Const "K1")) (InputPrefix "in_2" (Const "K2")))])
     -- Input prefix on same variable
-  , ("in(x : Int).in(x : Int).0", [Sum (InputPrefix "in_0" (Sum (InputPrefix "in_0" Inaction) (Sum (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction)))) (Sum (InputPrefix "in_1" (Sum (InputPrefix "in_0" Inaction) (Sum (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction)))) (InputPrefix "in_2" (Sum (InputPrefix "in_0" Inaction) (Sum (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction)))))])
+  , ("in(x : Int).in(x : Int).0", [SumIp (InputPrefix "in_0" (SumIp (InputPrefix "in_0" Inaction) (SumIp (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction)))) (SumIp (InputPrefix "in_1" (SumIp (InputPrefix "in_0" Inaction) (SumIp (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction)))) (InputPrefix "in_2" (SumIp (InputPrefix "in_0" Inaction) (SumIp (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction)))))])
     -- Output prefix
   , ("'out(1).0", [OutputPrefix "out_1" Inaction])
     -- Input prefix with output prefix
-  , ("in(x : Int).'out(x+1).0", [Sum (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction))])
+  , ("in(x : Int).'out(x+1).0", [SumIp (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction))])
     -- Multiple input prefix with output prefix
-  , ("in(x : Int).in(y : Int).'out(x + y).0", [Sum (InputPrefix "in_0" (Sum (InputPrefix "in_0" (OutputPrefix "out_0" Inaction)) (Sum (InputPrefix "in_1" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_2" (OutputPrefix "out_2" Inaction))))) (Sum (InputPrefix "in_1" (Sum (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction)))) (InputPrefix "in_2" (InputPrefix "in_0" (OutputPrefix "out_2" Inaction))))])
+  , ("in(x : Int).in(y : Int).'out(x + y).0", [SumIp (InputPrefix "in_0" (SumIp (InputPrefix "in_0" (OutputPrefix "out_0" Inaction)) (SumIp (InputPrefix "in_1" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_2" (OutputPrefix "out_2" Inaction))))) (SumIp (InputPrefix "in_1" (SumIp (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction)))) (InputPrefix "in_2" (InputPrefix "in_0" (OutputPrefix "out_2" Inaction))))])
     -- Tau prefix
   , ("tau.0", [TauPrefix Inaction])
     -- Parallel processes
@@ -52,7 +52,7 @@ compilerTests =
     -- More parallel processes
   , ("0 | 0 | 0", [Parallel Inaction (Parallel Inaction Inaction)])
     -- Complex Parallel example
-  , ("(in(x : Int).0) | ('out(2).0)", [Parallel (Sum (InputPrefix "in_0" Inaction) (Sum (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction))) (OutputPrefix "out_2" Inaction)])
+  , ("(in(x : Int).0) | ('out(2).0)", [Parallel (SumIp (InputPrefix "in_0" Inaction) (SumIp (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction))) (OutputPrefix "out_2" Inaction)])
     -- Sum of processes
   , ("0 + 0", [Sum Inaction Inaction])
     -- Sum of more processes
@@ -62,19 +62,19 @@ compilerTests =
     -- Restriction on unused channel
   , ("0\\{p}", [Inaction])
     -- Restriction on input channel
-  , ("(in(x : Int).0)\\{in}", [Restriction (Sum (InputPrefix "in_0" Inaction) (Sum (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction))) ["in_0","in_1","in_2"]])
+  , ("(in(x : Int).0)\\{in}", [Restriction (SumIp (InputPrefix "in_0" Inaction) (SumIp (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction))) ["in_0","in_1","in_2"]])
     -- Restriction on output channel
   , ("('out(2).0)\\{out}", [Restriction (OutputPrefix "out_2" Inaction) ["out_2"]])
     -- Complex Restriction example
-  , ("(in(x : Int).'out(x + 1).0)\\{out,in}", [Restriction (Sum (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction))) ["out_1","out_2","in_0","in_1"]])
+  , ("(in(x : Int).'out(x + 1).0)\\{out,in}", [Restriction (SumIp (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction))) ["out_1","out_2","in_0","in_1"]])
     -- Relabeling on unused channel
   , ("0[newIn/in]", [Inaction])
     -- Relabeling on input channel
-  , ("(in(x : Int).0)[newIn/in]", [Relabel (Sum (InputPrefix "in_0" Inaction) (Sum (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction))) [("newIn_0","in_0"),("newIn_1","in_1"),("newIn_2","in_2")]])
+  , ("(in(x : Int).0)[newIn/in]", [Relabel (SumIp (InputPrefix "in_0" Inaction) (SumIp (InputPrefix "in_1" Inaction) (InputPrefix "in_2" Inaction))) [("newIn_0","in_0"),("newIn_1","in_1"),("newIn_2","in_2")]])
     -- Relabeling on output channel
   , ("('out(2).0)[newOut/out]", [Relabel (OutputPrefix "out_2" Inaction) [("newOut_2","out_2")]])
     -- Complex Relabeling example
-  , ("(in(x : Int).'out(x+1).0)[newIn/in, newOut/out]", [Relabel (Sum (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction))) [("newIn_0","in_0"),("newIn_1","in_1"),("newOut_1","out_1"),("newOut_2","out_2")]])
+  , ("(in(x : Int).'out(x+1).0)[newIn/in, newOut/out]", [Relabel (SumIp (InputPrefix "in_0" (OutputPrefix "out_1" Inaction)) (InputPrefix "in_1" (OutputPrefix "out_2" Inaction))) [("newIn_0","in_0"),("newIn_1","in_1"),("newOut_1","out_1"),("newOut_2","out_2")]])
   ]
 
 runTests :: IO ()

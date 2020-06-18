@@ -1,6 +1,8 @@
 module Context where
 import ParseExpressionVar
 
+-- Keeps track of Int and Bool values set
+-- and subprocesses channel bindings
 type Context = ([Int], [Bool], [(String, Int)], [(String, Bool)])
 type Bindings = ([(String, Int)], [(String, Bool)])
 

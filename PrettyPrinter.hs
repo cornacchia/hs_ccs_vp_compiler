@@ -19,6 +19,7 @@ translateProcess (OutputPrefix c p) = "'" ++ c ++ "." ++ (translateProcess p)
 translateProcess (TauPrefix p) = "tau." ++ (translateProcess p)
 translateProcess (Parallel p1 p2) = "(" ++ (translateProcess p1) ++ ") | (" ++ (translateProcess p2) ++ ")"
 translateProcess (Sum p1 p2) = "(" ++ (translateProcess p1) ++ ") + (" ++ (translateProcess p2) ++ ")"
+translateProcess (SumIp p1 p2) = "(" ++ (translateProcess p1) ++ ") + (" ++ (translateProcess p2) ++ ")"
 translateProcess (Restriction p cs) = "(" ++ (translateProcess p) ++ ")\\" ++ (translateRestriction cs)
 translateProcess (Relabel p r) = "(" ++ (translateProcess p) ++ ")" ++ (translateRelabeling r)
 
